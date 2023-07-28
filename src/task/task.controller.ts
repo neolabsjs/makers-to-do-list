@@ -12,11 +12,13 @@ export class TaskController {
 
   @Get('/:id')
   async getOne(@Param('id') id: string) {
-    console.log(id);
+    return await this.getOne(id);
   }
 
   @Post()
   async create(@Body() data) {
-    console.log(data);
+    return await this.taskService.create(data);
   }
+
+  // @Put()
 }

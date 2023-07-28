@@ -1,22 +1,32 @@
 import { Injectable } from '@nestjs/common';
+import { ITask, ITaskService } from './interface';
+import { InjectModel } from '@nestjs/mongoose';
+import { TaskModel } from './model/task.model';
+import { Model } from 'mongoose';
 
 @Injectable()
-export class TaskService {
-  #TASKS;
-  constructor() {
-    this.#TASKS = [
-      { id: 1, title: 'Вынести мусор', completed: true },
-      { id: 2, title: 'Купить хлеб и молоко', completed: false },
-      { id: 3, title: 'Подписать договор', completed: false },
-      { id: 4, title: 'Провести урок', completed: true },
-    ];
+export class TaskService implements ITaskService {
+  constructor(
+    @InjectModel(TaskModel.name) private readonly taskModel: Model<TaskModel>,
+  ) {}
+
+  async getAll(): Promise<ITask[]> {
+    return await this.taskModel.find();
   }
 
-  async getAll() {
-    return this.#TASKS;
+  async getOne(id: string) {
+    const task = await this.taskModel.findOne({
+      _id: id,
+    });
+    return task;
   }
 
-  // async getOne(id: string) {}
+  async create(data): Promise<ITask> {
+    const newTask = new this.taskModel(data);
+    return newTask.save();
+  }
 
-  // async create(data) {}
+  // async update(id, title) {}
+
+  // async complete(id) {}
 }
