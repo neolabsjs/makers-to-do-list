@@ -1,8 +1,6 @@
 import { TaskType } from '../enum';
 
-export interface ITask {
-  id: string;
+export class CreateTaskDto {
   title: string;
   type: TaskType;
-  completed: boolean;
 }
