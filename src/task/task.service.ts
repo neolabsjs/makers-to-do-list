@@ -1,7 +1,6 @@
 import {
   ConflictException,
   Injectable,
-  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
@@ -9,7 +8,7 @@ import { Model } from 'mongoose';
 import { ITask, ITaskService } from './interface';
 import { TaskModel } from './model';
 import { TaskType } from './enum';
-import { CreateTaskDto } from './dto';
+import { CreateTaskDto, UpdateTaskDto } from './dto';
 
 @Injectable()
 export class TaskService implements ITaskService {
@@ -33,30 +32,23 @@ export class TaskService implements ITaskService {
   // }
 
   async getOne(id: string) {
-    try {
-      const task = await this.taskModel.findById(id);
-      return task;
-    } catch (err) {
-      Logger.error(err, 'TaskService getOne 26');
+    const task = await this.taskModel.findById(id);
+    if (!task) {
       throw new NotFoundException('Task is not defined');
-      // throw new HttpException('Task is not defined', HttpStatus.NOT_FOUND);
     }
+    return task;
   }
 
   // 64c3eeb87984df7cca567306 - 0-9, a-f, length is 24
 
   async create(data: CreateTaskDto): Promise<ITask> {
     const { title } = data;
-
-    const exist = await this.taskModel.findOne({ title });
-    if (exist) {
-      throw new ConflictException('Such task already exists');
-    }
+    await this.checkUnique(title);
 
     const newTask = new this.taskModel(data);
     !newTask.type ? (newTask.type = TaskType.IMPORTANT_AND_URGENT) : null;
 
-    Logger.log('New task was created', TaskService.name);
+    // Logger.log('New task was created', TaskService.name);
     return newTask.save();
   }
 
@@ -64,7 +56,37 @@ export class TaskService implements ITaskService {
   //   return await this.taskModel.insertMany(data);
   // }
 
-  // async update(id, title) {}
+  async update(id: string, data: UpdateTaskDto): Promise<ITask> {
+    const { title } = data;
+    const task = await this.getOne(id);
+
+    title != task.title ? await this.checkUnique(title) : null;
+
+    Object.assign(task, data);
+    return task.save();
+  }
+
+  async delete(id: string): Promise<void> {
+    await this.getOne(id);
+    await this.taskModel.deleteOne({ _id: id });
+  }
+
+  async checkUnique(title: string): Promise<void> {
+    const exist = await this.taskModel.findOne({ title });
+    if (exist) {
+      throw new ConflictException('Such task already exists');
+    }
+  }
+
+  // async update(id: string, data: UpdateTaskDto): Promise<ITask> {
+  //   const task = await this.getOne(id);
+  //   const { title, type } = data;
+  //   const update = await this.taskModel.updateOne(
+  //     { _id: id },
+  //     { $set: { title, type } },
+  //   );
+  //   return await this.getOne(id);
+  // }
 
   // async complete(id) {}
 }
