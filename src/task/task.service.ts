@@ -8,7 +8,7 @@ import { Model } from 'mongoose';
 import { ITask, ITaskService } from './interface';
 import { TaskModel } from './model';
 import { TaskType } from './enum';
-import { CreateTaskDto, UpdateTaskDto } from './dto';
+import { CreateTaskDto, GetAllTasksQuery, UpdateTaskDto } from './dto';
 
 @Injectable()
 export class TaskService implements ITaskService {
@@ -16,8 +16,14 @@ export class TaskService implements ITaskService {
     @InjectModel(TaskModel.name) private readonly taskModel: Model<TaskModel>,
   ) {}
 
-  async getAll(type?: TaskType): Promise<ITask[]> {
-    return await this.taskModel.find(type ? { type } : {});
+  async getAll(query: GetAllTasksQuery): Promise<ITask[]> {
+    const { type, page, limit } = query;
+    return await this.taskModel
+      .find(type ? { type } : {})
+      .skip(limit * (page - 1))
+      .limit(limit)
+      .sort({ title: 'asc' });
+    // .sort({ [sortField]: sortType });
   }
 
   // enum filterField {
@@ -42,9 +48,6 @@ export class TaskService implements ITaskService {
   // 64c3eeb87984df7cca567306 - 0-9, a-f, length is 24
 
   async create(data: CreateTaskDto): Promise<ITask> {
-    const { title } = data;
-    await this.checkUnique(title);
-
     const newTask = new this.taskModel(data);
     !newTask.type ? (newTask.type = TaskType.IMPORTANT_AND_URGENT) : null;
 

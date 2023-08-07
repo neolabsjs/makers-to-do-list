@@ -14,14 +14,13 @@ import {
   ApiNotFoundResponse,
   ApiOkResponse,
   ApiOperation,
-  ApiQuery,
   ApiTags,
 } from '@nestjs/swagger';
-import { ExceptionDto } from 'src/utils';
+import { GetByIdParam, ExceptionDto } from 'src/utils';
 import { TaskService } from './task.service';
-import { TaskType } from './enum';
-import { CreateTaskDto, TaskDto, UpdateTaskDto } from './dto';
+import { CreateTaskDto, GetAllTasksQuery, TaskDto, UpdateTaskDto } from './dto';
 import { ITask } from './interface';
+import { CheckUniquePipe } from './pipe';
 
 @ApiTags('Task')
 @Controller('task')
@@ -34,9 +33,8 @@ export class TaskController {
     type: [TaskDto],
     description: 'List of tasks (with such type if that param was provided)',
   })
-  @ApiQuery({ name: 'type', enum: TaskType })
-  async getAll(@Query('type') type?: TaskType): Promise<ITask[]> {
-    return await this.taskService.getAll(type);
+  async getAll(@Query() query: GetAllTasksQuery): Promise<ITask[]> {
+    return await this.taskService.getAll(query);
   }
 
   @Get('/:id')
@@ -49,27 +47,27 @@ export class TaskController {
     type: ExceptionDto,
     description: 'Task is not defined',
   })
-  async getOne(@Param('id') id: string): Promise<ITask> {
+  async getOne(@Param() { id }: GetByIdParam): Promise<ITask> {
     return await this.taskService.getOne(id);
   }
 
   @Post()
   // @ApiConflictResponse()
-  async create(@Body() data: CreateTaskDto): Promise<ITask> {
+  async create(@Body(CheckUniquePipe) data: CreateTaskDto): Promise<ITask> {
     return await this.taskService.create(data);
   }
 
   @Patch('/:id')
   async update(
-    @Param('id') id: string,
-    @Body() data: UpdateTaskDto,
+    @Param() { id }: GetByIdParam,
+    @Body(CheckUniquePipe) data: UpdateTaskDto,
   ): Promise<ITask> {
     return await this.taskService.update(id, data);
   }
 
   @Delete('/:id')
   @HttpCode(HttpStatus.NO_CONTENT)
-  async delete(@Param('id') id: string): Promise<void> {
+  async delete(@Param() { id }: GetByIdParam): Promise<void> {
     return await this.taskService.delete(id);
   }
 }
